@@ -1,0 +1,10 @@
+usbd_msc.c:525:10:USBD_MSC_GetHSCfgDesc	0	static
+usbd_msc.c:538:10:USBD_MSC_GetFSCfgDesc	0	static
+usbd_msc.c:551:10:USBD_MSC_GetOtherSpeedCfgDesc	0	static
+usbd_msc.c:563:10:USBD_MSC_GetDeviceQualifierDescriptor	0	static
+usbd_msc.c:291:9:USBD_MSC_Init	16	static
+usbd_msc.c:371:9:USBD_MSC_Setup	32	static
+usbd_msc.c:498:9:USBD_MSC_DataIn	8	static
+usbd_msc.c:512:9:USBD_MSC_DataOut	8	static
+usbd_msc.c:340:9:USBD_MSC_DeInit	16	static
+usbd_msc.c:575:9:USBD_MSC_RegisterStorage	0	static

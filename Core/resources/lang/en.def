@@ -1,0 +1,43 @@
+// ENGLISH.DEF - literally this is the english stuff!
+
+X(STR_BIOS_START,				"LCD Display HW: online V2.0")
+X(STR_GENERAL_WORD_SIZE,		"size")
+X(STR_HW_INIT_RAM,				"FMC setup complete")
+X(STR_CRASH_ALERT,				"System crashed before!")
+X(STR_CRASH_PRESSSCREEN,		"Press screen, or button 1")
+X(STR_CRASH_INFOWENTTOUART,		"Detailed crash info went to the UART")
+
+// GUI BUTTONS -----------------------------------------------------------------------------------------
+X(STR_OK,              			"OK")
+X(STR_CANCEL,          			"Cancel")
+X(STR_SETTINGS,        			"Settings")
+X(STR_BRIGHTNESS,      			"Brightness")
+X(STR_LANGUAGE,        			"Language")
+
+// Peripheral Alerts -----------------------------------------------------------------------------------
+X(STR_SDINITFAILED,    			"SD Init failed!")
+X(STR_SDCARDFAILED,    			"SD Card Init failed!")
+X(STR_SDCARDINIT,      			"SDCARD init")
+X(STR_SDCARDMOUNT_SUCCESS,		"SDCARD Mount Success")
+X(STR_SDCARDMOUNT_FAILED,		"SDCARD Mount Failed")
+X(STR_SDCARDMOUNT_NOTCOMPLETE,	"SDCARD Mount failed file system")
+X(STR_SDCARD_NOT_PRESENT,		"No, or faulty SDCARD in drive")
+X(STR_FS_DISKNOTREADY,			"Filesystem not ready (or disk is not in drive")
+X(STR_FS_FILE_NOTEXISTS,		"failed to open file")
+
+X(STR_SDCARD_REMOVED,			"SDCARD Was removed")
+X(STR_SDCARD_UNMOUNTED,			"SDCARD Unmounted")
+X(STR_SDCARD_UNMOUNTFAIL,		"SDCARD Failed to unmount cleanly")
+X(STR_SDCARD_IO_FAIL,			"SDCARD I/O Fail to unload")
+
+X(STR_AUDIO_HARDWARE_START,		"AUDIO: Starting Hardware")
+X(STR_AUDIO_TMR_START_OK,		"AUDIO: Frequency tmr started OK")
+X(STR_AUDIO_TMR_START_FAIL,		"AUDIO: Frequency tmr failed to start")
+
+X(STR_LONG_TEST, 				"this is a test and its a long test\n"
+								"something more to come, c'mon!!\n"
+								"more and more lines!!\n"
+								"anyway.. The end!\n\n")
+								
+X(STR_SHORT_TEST,				"short test")
+

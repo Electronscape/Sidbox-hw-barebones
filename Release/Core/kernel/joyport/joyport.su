@@ -1,0 +1,4 @@
+joyport.c:34:6:Mouse_updateRawDeltas	16	static
+joyport.c:68:6:MouseUpdateVBL	12	static
+joyport.c:117:6:HAL_GPIO_EXTI_Callback	0	static
+joyport.c:141:9:readJoyPort	0	static

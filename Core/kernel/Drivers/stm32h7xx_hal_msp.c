@@ -1,0 +1,9 @@
+#include "main.h"
+void HAL_MspInit(void) {
+	__HAL_RCC_SYSCFG_CLK_ENABLE();
+
+	HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_3);
+	HAL_SYSCFG_DisableVREFBUF();
+	HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE);
+}
+

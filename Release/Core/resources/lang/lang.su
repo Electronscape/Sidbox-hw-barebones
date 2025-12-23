@@ -1,0 +1,4 @@
+lang.c:9:6:lang_set_en	0	static
+lang.c:10:6:lang_set_fr	0	static
+lang.c:13:6:init_language	0	static
+lang.c:19:13:lang_get	0	static

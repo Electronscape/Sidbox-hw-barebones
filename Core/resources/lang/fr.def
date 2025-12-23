@@ -1,0 +1,11 @@
+// FRENCH.DEF
+X(STR_OK,              "OK")
+X(STR_CANCEL,          "Annuler")
+X(STR_SETTINGS,        "Paramètres")
+X(STR_BRIGHTNESS,      "Luminosité")
+X(STR_LANGUAGE,        "Langue")
+
+// Alertes périphériques
+X(STR_SDINITFAILED,    "Échec de l'initialisation SD !")
+X(STR_SDCARDFAILED,    "Échec de la carte SD !")
+X(STR_SDCARDINIT,      "Initialisation SD")

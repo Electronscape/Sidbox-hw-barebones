@@ -1,0 +1,7 @@
+core_cm7.h:2156:34:__NVIC_SystemReset	0	static,ignoring_inline_asm
+fmc.c:86:13:HAL_FMC_MspInit	240	static
+fmc.c:8:6:MX_FMC_Init	88	static
+fmc.c:206:6:HAL_SRAM_MspInit	0	static
+fmc.c:211:6:HAL_SDRAM_MspInit	0	static
+fmc.c:294:6:HAL_SRAM_MspDeInit	8	static
+fmc.c:299:6:HAL_SDRAM_MspDeInit	8	static

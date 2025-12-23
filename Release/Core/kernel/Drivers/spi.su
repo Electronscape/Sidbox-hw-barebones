@@ -1,0 +1,7 @@
+spi.c:14:6:MX_SPI1_Init	16	static
+spi.c:56:6:MX_SPI2_Init	16	static
+spi.c:98:6:MX_SPI3_Init	16	static
+spi.c:140:6:MX_SPI4_Init	16	static
+spi.c:182:6:MX_SPI5_Init	16	static
+spi.c:224:6:HAL_SPI_MspInit	296	static
+spi.c:521:6:HAL_SPI_MspDeInit	8	static

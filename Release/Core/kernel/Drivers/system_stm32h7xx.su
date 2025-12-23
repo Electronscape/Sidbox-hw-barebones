@@ -1,0 +1,2 @@
+system_stm32h7xx.c:22:6:SystemInit	8	static
+system_stm32h7xx.c:157:6:SystemCoreClockUpdate	8	static

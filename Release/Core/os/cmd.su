@@ -1,0 +1,7 @@
+cmd.c:127:13:CMDHelloworld	0	static
+cmd.c:115:13:CMDHelpOS	0	static
+cmd.c:146:13:CMDCatFile	544	static
+cmd.c:175:13:CMDRebootTest	0	static
+cmd.c:133:13:CMDParamsTest	24	static
+cmd.c:17:5:parse_args	16	static
+cmd.c:93:6:cmd_entry	56	static

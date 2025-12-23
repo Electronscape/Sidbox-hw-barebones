@@ -1,0 +1,5 @@
+core_cm7.h:2156:34:__NVIC_SystemReset	0	static,ignoring_inline_asm
+mcuconf.c:82:6:MPU_Config	40	static,ignoring_inline_asm
+mcuconf.c:124:6:Error_Handler	48	static,ignoring_inline_asm
+mcuconf.c:16:6:SystemClock_Config	144	static
+mcuconf.c:63:6:PeriphCommonClock_Config	216	static

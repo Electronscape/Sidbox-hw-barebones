@@ -1,0 +1,9 @@
+filesys.c:42:13:diskcode_str	0	static
+filesys.c:51:6:MX_FATFS_Init	0	static
+filesys.c:56:6:MX_FATFS_DeInit	0	static
+filesys.c:67:6:isDiskMounted	0	static
+filesys.c:68:6:isDiskPresent	0	static
+filesys.c:71:6:DiskMount	24	static
+filesys.c:125:6:UnmountDisk	8	static
+filesys.c:146:6:doDiskHeartBeat	8	static
+filesys.c:192:6:FATFSCHECK	528	static

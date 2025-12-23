@@ -1,0 +1,4 @@
+timers.c:6:6:delayNOPS	8	static,ignoring_inline_asm
+timers.c:12:10:getUs	24	static
+timers.c:22:6:delayUs	40	static,ignoring_inline_asm
+timers.c:30:6:delayMs	40	static,ignoring_inline_asm

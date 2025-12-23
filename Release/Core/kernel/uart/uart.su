@@ -1,0 +1,8 @@
+uart.c:14:6:MX_USART1_UART_Init	8	static
+uart.c:43:6:HAL_UART_MspInit	240	static
+uart.c:74:6:HAL_UART_MspDeInit	8	static
+uart.c:90:5:dbug	16	static
+uart.c:122:6:resetUART	0	static
+uart.c:127:6:uart_buffercheck_timer	16	static
+uart.c:141:6:flushCmd	8	static
+uart.c:147:6:uart_isr	8	static

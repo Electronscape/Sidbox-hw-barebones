@@ -2,6 +2,8 @@
 #include "main.h"
 #include <string.h>
 
+#include "filesys.h"
+
 #include "gfx.h"
 
 
@@ -11,8 +13,20 @@
 
 static uint8_t 		fpen = GFX_DEFAULT_FPEN;	// fore colour
 static uint8_t 		bpen = GFX_DEFAULT_BPEN;	// back colour for things like fills (text background or filled primatives
-
 static uint8_t 		cpen = GFX_DEFAULT_CPEN;	// current pen to use
+
+
+
+////SCRATCH MEMORY ASSIGNMENT /////////////////////////////////////////////////////////////////////////////////////////////////////
+#define IOBUF_SIZE 			512
+#define SCRATCH_WIDE_SIZE	4096
+// scratch memory, must only be used ONE AT A TIME, makesure the previous function is finished with this before using it in another
+static uint8_t SCRATCH_WIDE_BUFFER[SCRATCH_WIDE_SIZE]	ATT_ALIGN32;
+static uint8_t SECTOR_WIDE_BUFFER[IOBUF_SIZE]			ATT_ALIGN32;
+// naming conventions ---------------------------------------------
+static uint8_t * const rowbuf = SCRATCH_WIDE_BUFFER;
+static uint8_t * const rlebuf = SECTOR_WIDE_BUFFER;
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void gfx_setfpen(uint8_t colourindex){ fpen = colourindex; cpen = fpen; }	// fpen is used mainly for text
@@ -22,6 +36,117 @@ void gfx_setbpen(uint8_t colourindex){ bpen = colourindex; }				// bpen is used 
 // this is slightly unsafe, so make sure to set the action area
 void gfx_cls(){	// clears the active draw buffer
 	memset(gfx_drawbuffer->bitmap, 0x00, gfx_drawbuffer->memspacelen);
+}
+
+///////////// BITMAP LOAD ROUTINE ///////////////////////////////////////////////////////////////////////////////////////////////////
+// lsload = landscape loader, the images will load organised column major
+// lsload = 0 - just loads the file as is no translation, this means the orientations WILL BE portrate loaded (LCD VRAM limitations)
+// lsload = 1 - will load the file to appear landscape does all the rotations for you
+
+uint32_t out_i = 0;
+UINT avail = 0;   // bytes currently in buffer
+UINT pos   = 0;   // current read position
+
+// helper: refill buffer
+static int rle_refill(FIL *f, UINT *avail, UINT *pos) {
+	*pos = 0;
+	UINT got = 0;
+	FRESULT fres = f_read(f, rlebuf, IOBUF_SIZE, &got);
+	if (fres != FR_OK || got == 0)	return 0;
+	*avail = got;
+	return 1;
+}
+
+static inline void gfx_write_pixel(uint8_t *dst, uint32_t width, uint32_t height, bool lsload, uint32_t i, uint8_t p){
+    if (!lsload) {
+        dst[i] = p;
+    } else {
+        uint32_t y = i / width;
+        uint32_t x = i - (y * width);
+        dst[x * height + y] = p;
+    }
+}
+
+int gfx_loadbitmap(const char *filename, void *bitmap, uint32_t width, uint32_t height, bool lsload, bool rle){
+    if (!filename || !bitmap || width == 0 || height == 0) return 0;
+
+    uint8_t *dst = (uint8_t*)bitmap;
+    const uint32_t imageSize = width * height; // bytes @ 8bpp
+
+    UINT bytesret = 0;
+    FRESULT fres = f_open(&fil, filename, FA_READ | FA_OPEN_EXISTING);
+    if (fres != FR_OK) return 0;
+
+    // -------- RAW (no RLE) --------
+    if (!rle) {
+        if (!lsload) {
+            fres = f_read(&fil, dst, imageSize, &bytesret);
+            f_close(&fil);
+            if (fres != FR_OK || bytesret != imageSize) return 0;
+
+            SCB_CleanDCache_by_Addr((uint32_t*)dst, (int32_t)imageSize);
+            return 1;
+        }
+
+        // row-by-row load, converting to column-major
+        if (width > sizeof(rowbuf)) { f_close(&fil); return 0; }
+
+        uint32_t total = 0;
+        for (uint32_t y = 0; y < height; y++) {
+            UINT got = 0;
+            fres = f_read(&fil, rowbuf, (UINT)width, &got);
+            if (fres != FR_OK || got != width) { f_close(&fil); return 0; }
+            total += got;
+
+			for (uint32_t x = 0; x < width; x++)
+				dst[x * height + y] = rowbuf[x];
+        }
+
+        f_close(&fil);
+        if (total != imageSize) return 0;
+
+        SCB_CleanDCache_by_Addr((uint32_t*)dst, (int32_t)imageSize);
+        return 1;
+    }
+
+    // -------- RLE decode (count,value pairs) --------
+    // Stream-decode directly into destination
+    uint32_t out_i = 0; // pixel index in row-major order (0..imageSize-1)
+    if (!rle_refill(&fil, &avail, &pos)) { f_close(&fil); return 0; }
+
+    while (out_i < imageSize) {
+        if (pos + 2 > avail) {
+            if (!rle_refill(&fil, &avail, &pos)) { f_close(&fil); return 0; }
+            if (pos + 2 > avail) { f_close(&fil); return 0; } // truncated file
+        }
+
+        uint32_t count = rlebuf[pos++];
+        uint8_t  value = rlebuf[pos++];
+
+        if (count == 0) { f_close(&fil); return 0; } // corrupt stream
+
+        if (out_i + count > imageSize)
+            count = imageSize - out_i;
+
+        if (!lsload) {	// not rotating image, just plonk it in memory
+            memset(dst + out_i, value, count);
+            out_i += count;
+        } else {		// rotate/convert per pixel (still faster now because IO is chunked)
+        	for (uint32_t k = 0; k < count; k++) {
+        		gfx_write_pixel(dst, width, height, lsload, out_i, value);
+        		out_i++;
+        	}
+        }
+    }
+    f_close(&fil);
+    SCB_CleanDCache_by_Addr((uint32_t*)dst, (int32_t)imageSize);
+    return 1;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void gfx_clear_bitmap(uint8_t *bitmap, uint32_t width, uint32_t height, uint8_t colour){
+	uint32_t size = (width * height);
+	memset(bitmap, colour, size);
 }
 
 static inline uint32_t gfx_coord(int16_t x, int16_t y){
@@ -492,8 +617,7 @@ void gfx_blit_raw(uint8_t *src, int16_t dx, int16_t dy, uint16_t src_w,	uint16_t
 	int16_t x1 = dx + (int16_t) src_w - 1;
 	int16_t y1 = dy + (int16_t) src_h - 1;
 
-	if (x1 < 0 || y1 < 0 || x0 >= bm->width || y0 >= bm->height)
-		return;
+	if (x1 < 0 || y1 < 0 || x0 >= bm->width || y0 >= bm->height) return;
 
 	if (x0 < 0)  x0 = 0;
 	if (y0 < 0)  y0 = 0;
@@ -506,9 +630,7 @@ void gfx_blit_raw(uint8_t *src, int16_t dx, int16_t dy, uint16_t src_w,	uint16_t
 		for (int16_t x = x0; x <= x1; x++) {
 			uint16_t sx = (uint16_t) (x - dx);
 			uint8_t p = src[src_row + sx];
-			if (p) {
-				dst[(uint32_t) x * stride + (uint32_t) y] = p;
-			}
+			if (p)  dst[(uint32_t) x * stride + (uint32_t) y] = p;
 		}
 	}
 }

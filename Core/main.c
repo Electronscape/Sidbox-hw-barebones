@@ -101,6 +101,8 @@ int main(void) {
 	//MX_ADC3_Init();
 	/////////////////////////////////////////
 
+	// SIDBOX actualy firmware!!
+
 	DMA2D_Callbacks_Init();	// for when /if we make use of the DMA2D transfer CLUT and Transfer to LCD are done.
 	SetEXTI4Callback();	// the default call back for EXTI interrupt, THIS will change when we go into the emulator
 

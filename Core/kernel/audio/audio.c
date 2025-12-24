@@ -44,6 +44,9 @@ static void AudioGenerateSineWave(int16_t freq, uint16_t *buffer) {
 		if (phase >= 2.0f * 3.14159265358979323846f)
 			phase -= 2.0f * 3.14159265358979323846f;
 	}
+
+	uint32_t bytes = lAudioBufferLength * sizeof(buffer[0]);
+	SCB_CleanDCache_by_Addr((uint32_t*)buffer, bytes);
 }
 
 
@@ -60,16 +63,16 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {		// DMA COMPLETED WH
 }
 
 static void clearAudioBuffers(){
-	uint32_t center = (DAC_CENTER_DC << 16) | DAC_CENTER_DC;
-	uint32_t *pR = (uint32_t *)dma_audio_out_r;
-	uint32_t *pL = (uint32_t *)dma_audio_out_l;
-	// clear the audio buffer to Nothing ( 2047 , half voltable, 1.75v or there abouts )
-	for (int i = 0; i < DEF_DMA_SOUND_BUFFER_FULL_LENGTH; i++) {
-		pR[i] = center;
-		pL[i] = center;
-	}
-	SCB_CleanDCache_by_Addr((uint32_t *)dma_audio_out_r, DEF_DMA_SOUND_BUFFER_FULL_LENGTH);
-	SCB_CleanDCache_by_Addr((uint32_t *)dma_audio_out_l, DEF_DMA_SOUND_BUFFER_FULL_LENGTH);
+    uint16_t center = DAC_CENTER_DC;
+
+    for (uint32_t i = 0; i < lAudioBufferLength; i++) {
+        dma_audio_out_r[i] = center;
+        dma_audio_out_l[i] = center;
+    }
+
+    uint32_t bytes = lAudioBufferLength * sizeof(dma_audio_out_r[0]);
+    SCB_CleanDCache_by_Addr((uint32_t*)dma_audio_out_r, (int32_t)bytes);
+    SCB_CleanDCache_by_Addr((uint32_t*)dma_audio_out_l, (int32_t)bytes);
 }
 
 void StopPlayerDMA() {
@@ -112,6 +115,15 @@ void setDMAAudioFreq(uint32_t freq) {
 
 void startAudioDriver(){
 	dbug("%s..\n", lang_get(STR_AUDIO_HARDWARE_START));
+	lAudioBufferLength = DEF_DMA_SOUND_BUFFER_FULL_LENGTH;
+	lAudioBufferHalf   = DEF_DMA_SOUND_BUFFER_HALF_LENGTH;	// the half size position
+	lAudioBufferOffset = 0;
+
+	// TEST AUDIO
+	clearAudioBuffers();	// clear the audio
+
+	AudioGenerateSineWave(441, dma_audio_out_l);
+	AudioGenerateSineWave(883, dma_audio_out_r);
 	//MX_TIM6_Init();	// <---- the following code below
 	TIM_MasterConfigTypeDef sMasterConfig = { 0 };
 	hTmrAudioDMARate.Instance = TIM6;
@@ -129,18 +141,14 @@ void startAudioDriver(){
 	}
 
 
-	lAudioBufferLength = DEF_DMA_SOUND_BUFFER_FULL_LENGTH;
-	lAudioBufferHalf   = DEF_DMA_SOUND_BUFFER_HALF_LENGTH;	// the half size position
 
 	int res = HAL_TIM_Base_Start(&hTmrAudioDMARate);
 	if(res) dbug("%s\n", lang_get(STR_AUDIO_TMR_START_FAIL));
 	else    dbug("%s\n", lang_get(STR_AUDIO_TMR_START_OK));
 
-	clearAudioBuffers();	// clear the audio
 
-	// TEST AUDIO
-	AudioGenerateSineWave(441, dma_audio_out_l);
-	AudioGenerateSineWave(883, dma_audio_out_r);
+
+
 
 	setDMAAudioFreq(DEF_MIX_FREQUENCY);
 }

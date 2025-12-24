@@ -495,14 +495,10 @@ void gfx_blit_raw(uint8_t *src, int16_t dx, int16_t dy, uint16_t src_w,	uint16_t
 	if (x1 < 0 || y1 < 0 || x0 >= bm->width || y0 >= bm->height)
 		return;
 
-	if (x0 < 0)
-		x0 = 0;
-	if (y0 < 0)
-		y0 = 0;
-	if (x1 >= bm->width)
-		x1 = bm->width - 1;
-	if (y1 >= bm->height)
-		y1 = bm->height - 1;
+	if (x0 < 0)  x0 = 0;
+	if (y0 < 0)  y0 = 0;
+	if (x1 >= bm->width)  x1 = bm->width - 1;
+	if (y1 >= bm->height) y1 = bm->height - 1;
 
 	for (int16_t y = y0; y <= y1; y++) {
 		uint16_t sy = (uint16_t) (y - dy);

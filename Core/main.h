@@ -31,6 +31,23 @@
 #include "lang/lang.h"
 #include "uart/uart.h"
 
+#define SDRAM_BANK_ADDR 		0xD0000000			// our external memory
+
+//
+#define RAM_OFFSETS_0MEG_BEGIN	0x000000	// Our user memory area, programs, music, stuff
+#define RAM_OFFSETS_0MEG		0x000000	// 0 MEG OFFSET
+#define RAM_OFFSETS_1MEG		0x100000	// 1 MEG OFFSET
+#define RAM_OFFSETS_2MEG		0x200000	// 2 MEG OFFSET
+#define RAM_OFFSETS_3MEG		0x300000	// 3 MEG OFFSET
+#define RAM_OFFSETS_4MEG		0x400000	// 4 MEG OFFSET
+#define RAM_OFFSETS_5MEG		0x500000	// 5 MEG OFFSET
+#define RAM_OFFSETS_5MEG_END	0x500000	// 5 MEG OFFSET - 0x5FFFFF
+//
+#define RAM_OFFSETS_6MEG		0x600000	// 6 MEG OFFSET -- display port graphics area
+#define RAM_OFFSETS_7MEG		0x700000	// 7 MEG OFFSET	-- beyond 7meg is where the OS sits! careful
+
+
+#define RAM_USERRAM_LENGTH		(RAM_OFFSETS_6MEG - 1)
 
 void Error_Handler(void);
 
@@ -96,6 +113,7 @@ void Error_Handler(void);
 
 #define ALIGN32(x) (((x) + 31) & ~31)
 #define ALIGNSCR32(x) (((x) + CACHE_LINE_SIZE - 1) & ~(CACHE_LINE_SIZE - 1))
+#define ATT_ALIGN32		__attribute__((aligned(32)))
 
 typedef unsigned char byte;
 typedef unsigned short word;

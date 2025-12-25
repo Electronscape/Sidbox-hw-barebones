@@ -56,7 +56,7 @@ void gfx_draw_polyf(const gfx_point_t *pts, int16_t n);						// filled polygone 
 
 // loading images
 void gfx_clear_bitmap(uint8_t *bitmap, uint32_t width, uint32_t height, uint8_t colour);
-int gfx_loadbitmap(const char *filename, void *bitmap, uint32_t width, uint32_t height, bool lsload, bool rle);	// lsload (landscape load)
+//int gfx_loadbitmap(const char *filename, void *bitmap, uint32_t width, uint32_t height, bool lsload, bool rle);	// lsload (landscape load)
 
 // blitting routines
 void gfx_blit_rle(uint8_t *img, int16_t dx, int16_t dy, uint16_t src_w, uint16_t src_h);

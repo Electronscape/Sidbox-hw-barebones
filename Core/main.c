@@ -96,13 +96,15 @@ int main(void) {
 	//MX_SPI5_Init();
 	//MX_TIM5_Init();
 	//MX_TIM7_Init();
-	MX_DMA2D_Init();
+	//MX_DMA2D_Init();
 	MX_TIM3_Init();
 	//MX_ADC3_Init();
 	/////////////////////////////////////////
 
 	// SIDBOX actualy firmware!!
 
+	//DMA2D_DisplayInit(SF_SCREENWIDTH, SF_SCREENHEIGHT, SF_SCREENWIDTH, SF_SCREENHEIGHT, DISPFLAG_DUALLAYER);
+	DMA2D_DisplayInit(SF_SCREENWIDTH, SF_SCREENHEIGHT, 960, 640, DISPFLAG_DUALLAYER | DISPFLAG_SCROLLABLE);	// big background
 	DMA2D_Callbacks_Init();	// for when /if we make use of the DMA2D transfer CLUT and Transfer to LCD are done.
 	SetEXTI4Callback();	// the default call back for EXTI interrupt, THIS will change when we go into the emulator
 
@@ -153,12 +155,21 @@ int main(void) {
 	dbug("%s", lang_get(STR_LONG_TEST));
 
 
+	//uint8_t *backmem = (uint8_t *)(uintptr_t)0xD0600000;	// our external memory (dont care area right now)
+	uint32_t size = 960u * 640u;        // 8bpp assumption
 
-
-
+	volatile uint8_t *backmem = (volatile uint8_t *)(uintptr_t)0xD0000000;// + size;	// at the end of the EXTRAM userspace
 
 	//LCD_Init_FMC(LCD_STARTUP);	// Startup the LCD port
 	LCD_InitHW(220, 60);	// Startup the LCD port
+	// now we can re-assign the backbuffers
+	lcd_set_backbitmap(backmem, backmem, 960, 640);	// backmem used twice, as draw and suface buffers, its a non updating image, save memory no memory flipping
+	gfx_clear_bitmap(backmem, 960, 640, 0);
+
+
+
+
+
 	HWLCD_CLEAR_SCREEN(0);								// Clear the screen
 	bios_text(0, 0, lang_get(STR_BIOS_START));
 
@@ -185,6 +196,19 @@ int main(void) {
 	} else
 		dbug("[!] %s\n", lang_get(STR_SDCARD_NOT_PRESENT));
 
+	//int gfxl = gfx_loadbitmap("/christmasrle.ppb", backmem, 960, 640, true, true);
+	//int gfxl = gfx_loadbitmap("/christmas2.ppb", backmem, 960, 640, false, false);
+
+	uint32_t *cluts = lcd_get_clut();
+	int gfxl = gfx_loadbitmap("/xmasg1.ppb", backmem, false, cluts);
+
+	if(gfxl){
+		dbug("Image loaded!\n");
+	} else dbug("could not find image\n");
+	SCB_CleanDCache_by_Addr((uint32_t*)backmem, (int32_t)size);  // size in BYTES
+
+	lcd_update_palette();
+
 
 	gfx_point_t points[4];
 
@@ -204,11 +228,13 @@ int main(void) {
 	int db = 1;
 
 	lcd_usebitmap(&gfx_bbitmap_1);
-	gfx_blit_raw(backpic, 0,0, 480, 320);
+	//gfx_blit_raw(backpic, 0, 0, 480, 320);
 
 	lcd_usebitmap(&gfx_fbitmap_1);
 	doLCDTest();
 
+	int scrollx = 0, scrolly = 0;
+	int scrollsx = 1, scrollsy = 1;
 
 	while (1) {
 		// DO OS STUFF
@@ -225,6 +251,14 @@ int main(void) {
 			lcd_showfbitmap(&gfx_fbitmap_2);
 			lcd_usebitmap(&gfx_fbitmap_1);
 		}
+
+		if(scrollx < 0 || scrollx > 480) scrollsx = -scrollsx;
+		if(scrolly < 0 || scrolly > 320) scrollsy = -scrollsy;
+
+		scrollx+= scrollsx;
+		scrolly+= scrollsy;
+
+		api_scroll_backlayer(scrollx, scrolly);
 
 		// logic test
 		if(sx < -60 || sx > 470) sbx = -sbx;

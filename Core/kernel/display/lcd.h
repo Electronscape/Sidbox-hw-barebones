@@ -281,9 +281,25 @@ void bios_text(long x, long y, const char *textptr);
 
 void lcd_setbrightness(int bright);
 void lcd_load_default_clut();					// load the default Colour palette from ROM to CLUT-colour_ram
-void lcd_update(void);								// a simple update lcd, call this to put what ever is in the draw buffers to the screen
+
+// HOST lcd_update function ----------------
+void (*lcd_update)(void);								// a simple update lcd, call this to put what ever is in the draw buffers to the screen
+
+void lcd_update_2LayerBasic(void);				// basic dual layer fixed size
+void lcd_update_2LayerScrollable(void);			// basic dual layer scrolling (basically bitmaps are bigger than the screen)
+
+void lcd_update_1LayerBasic(void);				// basic toplayer only fixed size
+void lcd_update_1LayerScrollable(void);			// basic toplayer only scrolling (bigger bitmaps in memory)
+
+void api_scroll_frontlayer(int x, int y);		// scrolling registers front
+void api_scroll_backlayer(int x, int y);		// scrolling registers back
+
+//-----------------------------------------
 
 // program flow controls
+void lcd_set_frontbitmap(uint8_t *bitmap1, uint8_t *bitmap2, uint16_t width, uint16_t height);
+void lcd_set_backbitmap(uint8_t *bitmap1, uint8_t *bitmap2, uint16_t width, uint16_t height);
+
 void lcd_showbitmap2(gfx_bitmap_t *showfront, gfx_bitmap_t *showback);
 void lcd_showfbitmap(gfx_bitmap_t *showfront);
 void lcd_showbbitmap(gfx_bitmap_t *showback);

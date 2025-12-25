@@ -67,15 +67,48 @@ static inline void gfx_write_pixel(uint8_t *dst, uint32_t width, uint32_t height
     }
 }
 
-int gfx_loadbitmap(const char *filename, void *bitmap, uint32_t width, uint32_t height, bool lsload, bool rle){
-    if (!filename || !bitmap || width == 0 || height == 0) return 0;
+static inline uint16_t rd_u16_be(const uint8_t *p) {
+    return (uint16_t)((p[0] << 8) | p[1]);
+}
+static inline uint32_t rd_u32_be(const uint8_t *p) {
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+// If your palette words in the file are big-endian and you want native uint32_t on STM32 (little-endian),
+// set this to 1. If colours look wrong, flip it.
+#ifndef PALETTE_WORDS_ARE_BIG_ENDIAN
+#define PALETTE_WORDS_ARE_BIG_ENDIAN 0
+#endif
+
+int gfx_loadbitmap(const char *filename, void *bitmap, bool lsload, uint32_t *clut){
+	bool rle;
+
+    if (!filename || !bitmap) return 0;
 
     uint8_t *dst = (uint8_t*)bitmap;
-    const uint32_t imageSize = width * height; // bytes @ 8bpp
+
 
     UINT bytesret = 0;
     FRESULT fres = f_open(&fil, filename, FA_READ | FA_OPEN_EXISTING);
-    if (fres != FR_OK) return 0;
+    if (fres != FR_OK) {
+    	dbug("File error %s\n", diskcode_str(fres));
+    		return 0;
+    }
+
+    uint8_t hdr[16];
+    fres = f_read(&fil, hdr, sizeof(hdr), &bytesret);
+    if (fres != FR_OK || bytesret != sizeof(hdr)) { f_close(&fil); return 0; }
+    rle = false;
+
+    uint8_t  config    = hdr[0];
+    uint32_t width     = rd_u16_be(&hdr[1]);
+    uint32_t height    = rd_u16_be(&hdr[3]);
+    uint32_t file_size = rd_u32_be(&hdr[5]); // decoded size (usually width*height)
+    uint32_t imageSize = width * height; // bytes @ 8bpp
+
+
+    fres = f_read(&fil, clut, 1024, &bytesret);	// always 256 * 4 bytes
+    SCB_CleanDCache_by_Addr((uint32_t*)clut, 1024);
 
     // -------- RAW (no RLE) --------
     if (!rle) {
@@ -83,7 +116,6 @@ int gfx_loadbitmap(const char *filename, void *bitmap, uint32_t width, uint32_t 
             fres = f_read(&fil, dst, imageSize, &bytesret);
             f_close(&fil);
             if (fres != FR_OK || bytesret != imageSize) return 0;
-
             SCB_CleanDCache_by_Addr((uint32_t*)dst, (int32_t)imageSize);
             return 1;
         }

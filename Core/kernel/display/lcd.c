@@ -18,7 +18,6 @@
 #include "joyport/joyport.h"
 //#include "gfx.h"
 
-
 const uint8_t bios_font[256][8] = {	// this is the bios font for the LCD hardware display
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },   // (  0)   0x00
 	{ 0x3C, 0x42, 0x95, 0xA1, 0xA1, 0x95, 0x42, 0x3C },   // (  1)   0x01
@@ -470,6 +469,50 @@ static void lcd_init_basic_buffers(){	// this must be called to stop crashing la
 	gfx_drawbuffer = &gfx_fbitmap_2;	// the draw buffer, only can draw on one buffer! so make sure u set this
 }
 
+void lcd_set_frontbitmap(uint8_t *bitmap1, uint8_t *bitmap2, uint16_t width, uint16_t height){
+	// bitmap1, bitmap2 required - double buffering system enforced
+	// MUST be of the same size, otherwise gremlins on display!
+
+	// this should take care of the information about the stride// ideally bitmap areas should be the power of 2s
+	//width 480, 960, 1920...
+	//height 320, 640, 1280...
+	uint16_t theStride;
+	uint32_t theMemSpace;
+
+	theMemSpace = (width * height);
+	theStride = height - LCD_HEIGHT;
+
+	gfx_fbitmap_1.bitmap 	= bitmap1;
+	gfx_fbitmap_2.bitmap 	= bitmap2;
+
+	gfx_fbitmap_1.height 	= gfx_fbitmap_2.height        = height;
+	gfx_fbitmap_1.width  	= gfx_fbitmap_2.width         = width;
+	gfx_fbitmap_1.stride 	= gfx_fbitmap_2.stride        = theStride;
+	gfx_fbitmap_1.memspacelen = gfx_fbitmap_2.memspacelen = theMemSpace;
+}
+
+void lcd_set_backbitmap(uint8_t *bitmap1, uint8_t *bitmap2, uint16_t width, uint16_t height){
+	// bitmap1, bitmap2 required - double buffering system enforced
+	// MUST be of the same size, otherwise gremlins on display!
+
+	// this should take care of the information about the stride// ideally bitmap areas should be the power of 2s
+	//width 480, 960, 1920...
+	//height 320, 640, 1280...
+	uint16_t theStride;
+	uint32_t theMemSpace;
+
+	theMemSpace = (width * height);
+	theStride = height;// - LCD_HEIGHT;
+
+	gfx_bbitmap_1.bitmap 	= bitmap1;
+	gfx_bbitmap_2.bitmap 	= bitmap2;
+
+	gfx_bbitmap_1.height 	= gfx_bbitmap_2.height = height;
+	gfx_bbitmap_1.width  	= gfx_bbitmap_2.width = width;
+	gfx_bbitmap_1.stride 	= gfx_bbitmap_2.stride = theStride;
+	gfx_bbitmap_1.memspacelen = gfx_bbitmap_2.memspacelen = theMemSpace;
+}
+
 // LCD Initialisation through the FMC channel, DIRECT // then switch to the hardware Chroma DMA2D for screen updates! will need a screen buffer! (2 for double buffering)
 void LCD_CrashDisplay(){
 	const unsigned short dat = 220;
@@ -681,7 +724,7 @@ void LCD_InitHW(unsigned short dat, char fps){
 	//gfx_bdrawbuffer	= gfx_blayer;	// primary back buffer
 
 
-	LCD_SetWindowsF(0, 0, 320, 480);	// 0 DEGREES
+	LCD_SetWindowsF(0, 0, LCD_HEIGHT-1, LCD_WIDTH-1);	// 0 DEGREES
 	lcd_init_basic_buffers();
 }
 
@@ -845,7 +888,36 @@ void lcd_vram_clear(){
 	}
 }
 
-void lcd_update(void) {
+////////////////////////////////////////////////////////
+// API and LCD and DMA2D systems here // they have to be this is what a driver does!
+static int gfx_fscroll_offset_x, gfx_fscroll_offset_y;		// front layer scroll registers
+static int gfx_bscroll_offset_x, gfx_bscroll_offset_y;		// back layer scroll registers
+
+static uint8_t *fsrcStart;	// front layer VRAM source location
+static uint8_t *bsrcStart;	// back layer VRAM source location
+void api_scroll_frontlayer(int x, int y){
+	// sets the offset for x on the draw area
+	gfx_fscroll_offset_x = x;
+	gfx_fscroll_offset_y = y;
+}
+
+void api_scroll_backlayer(int x, int y){
+	// sets the offset for x on the draw area
+	gfx_bscroll_offset_x = x;
+	gfx_bscroll_offset_y = y;
+}
+
+
+void lcd_update_palette(){
+	HAL_DMA2D_CLUTLoad_IT(&hdma2d, clut1, 0);	// clut change update
+	delayUs(16);
+	HAL_DMA2D_CLUTLoad_IT(&hdma2d, clut1, 1);	// clut change update
+	delayUs(16);
+}
+
+void (*lcd_update)(void);	// pointer to the correct function - speed is everything
+// THIS is a non frills version no fluff
+void lcd_update_2LayerBasic(void) {	// usually the OS would use this
     HAL_DMA2D_CLUTLoad_IT(&hdma2d, clut1, 1);	// clut change update
     //swap_buffers();	// doing this will add a little time for the CLUT to upload
 
@@ -855,7 +927,7 @@ void lcd_update(void) {
     while (!LCD_VSYNCIN);
 
     // Set window for the whole screen (or part of it if you want partial updates)
-    LCD_SetWindowsF(0, 0, 319, 479);
+    LCD_SetWindowsF(0, 0, LCD_HEIGHT-1, LCD_WIDTH-1);
 
     // Start DMA2D blending (this will send the new frame to the display)
 
@@ -866,11 +938,76 @@ void lcd_update(void) {
 			// target output 16bit wide GPIO port (connected to the DMA2D)
 			(uint32_t)(uintptr_t)&LCD_OUT,
 			// This is in LANDSCAPE mode
-			320,	// Display Height
-			480		// Display Width
+			LCD_HEIGHT,	// Display Height
+			LCD_WIDTH		// Display Width
 	);
-
 }
+
+void lcd_update_2LayerScrollable(void) {
+    HAL_DMA2D_CLUTLoad_IT(&hdma2d, clut1, 1);	// clut change update
+    //swap_buffers();	// doing this will add a little time for the CLUT to upload
+
+    SCB_CleanDCache_by_Addr((uint32_t *)gfx_fshowbuffer, LCD_SCREEN_RAMSIZE);
+    fsrcStart = (uint8_t*)gfx_fshowbuffer->bitmap;//DBBufferActive    + ((SRR_FGScrollX ) * srcSizeHeight) + (SRR_FGScrollY);
+    bsrcStart = (uint8_t*)gfx_bshowbuffer->bitmap + ((gfx_bscroll_offset_x ) * gfx_bshowbuffer->stride) + (gfx_bscroll_offset_y);
+    // wait here for the vsync to finish
+    while (LCD_VSYNCIN);	// Wait for VSYNC low (to avoid tearing) THIS should also pause long enough for the clut change
+    while (!LCD_VSYNCIN);
+
+    // Set window for the whole screen (or part of it if you want partial updates)
+    LCD_SetWindowsF(0, 0, LCD_HEIGHT-1, LCD_WIDTH-1);
+
+    HAL_DMA2D_BlendingStart_IT(&hdma2d,
+        		(uint32_t)(uintptr_t)fsrcStart,		// Front layer
+    			(uint32_t)(uintptr_t)bsrcStart,		// Back layer
+
+    			// target output 16bit wide GPIO port (connected to the DMA2D)
+    			(uint32_t)(uintptr_t)&LCD_OUT,
+    			// This is in LANDSCAPE mode
+    			LCD_HEIGHT,	// Display Height
+    			LCD_WIDTH		// Display Width
+    	);
+
+    // Start DMA2D blending (this will send the new frame to the display)
+    // TODO: Scrolling calculators
+    // TODO: initiate the blend to DMA2D
+}
+
+void lcd_update_1LayerBasic(void) {
+    HAL_DMA2D_CLUTLoad_IT(&hdma2d, clut1, 1);	// clut change update
+    //swap_buffers();	// doing this will add a little time for the CLUT to upload
+
+    SCB_CleanDCache_by_Addr((uint32_t *)gfx_fshowbuffer, LCD_SCREEN_RAMSIZE);
+    // wait here for the vsync to finish
+    while (LCD_VSYNCIN);	// Wait for VSYNC low (to avoid tearing) THIS should also pause long enough for the clut change
+    while (!LCD_VSYNCIN);
+
+    // Set window for the whole screen (or part of it if you want partial updates)
+    LCD_SetWindowsF(0, 0, LCD_HEIGHT-1, LCD_WIDTH-1);
+
+    // Start DMA2D blending (this will send the new frame to the display)
+    // do the single layer output no background layer
+}
+
+void lcd_update_1LayerScrollable(void) {
+    HAL_DMA2D_CLUTLoad_IT(&hdma2d, clut1, 1);	// clut change update
+    //swap_buffers();	// doing this will add a little time for the CLUT to upload
+
+    SCB_CleanDCache_by_Addr((uint32_t *)gfx_fshowbuffer, LCD_SCREEN_RAMSIZE);
+    // wait here for the vsync to finish
+    while (LCD_VSYNCIN);	// Wait for VSYNC low (to avoid tearing) THIS should also pause long enough for the clut change
+    while (!LCD_VSYNCIN);
+
+    // Set window for the whole screen (or part of it if you want partial updates)
+    LCD_SetWindowsF(0, 0, LCD_HEIGHT-1, LCD_WIDTH-1);
+
+    // Start DMA2D single layer draw (this will send the new frame to the display)
+    // TODO: Scrolling calculators
+    // TODO: initiate the DMA2D transfer
+}
+
+
+
 
 void lcd_load_new_clut(uint32_t *newclut){
 	for(int i = 0; i < 256; i++){

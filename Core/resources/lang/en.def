@@ -7,6 +7,7 @@ X(STR_CRASH_ALERT,				"System crashed before!")
 X(STR_CRASH_PRESSSCREEN,		"Press screen, or button 1")
 X(STR_CRASH_INFOWENTTOUART,		"Detailed crash info went to the UART")
 
+
 // GUI BUTTONS -----------------------------------------------------------------------------------------
 X(STR_OK,              			"OK")
 X(STR_CANCEL,          			"Cancel")
@@ -33,6 +34,15 @@ X(STR_SDCARD_IO_FAIL,			"SDCARD I/O Fail to unload")
 X(STR_AUDIO_HARDWARE_START,		"AUDIO: Starting Hardware")
 X(STR_AUDIO_TMR_START_OK,		"AUDIO: Frequency tmr started OK")
 X(STR_AUDIO_TMR_START_FAIL,		"AUDIO: Frequency tmr failed to start")
+
+// COMMON COMMAND LINE RESULTS -------------------------------------------------------------------------
+X(STR_CMD_HELP_WORD,			"HELP")
+X(STR_CMD_HELP_INTRO,			"Available internal commands. Additional commands may be found in /C/ on the disk.")
+X(STR_NEW_LCD_BRIGHTLEVEL,		"New LCD Light brightness")
+X(STR_CMD_RAMCLR_HELP1,			"(clears all)")
+X(STR_CMD_RAMCLR_HELP2,			"Note: start/end are byte offsets (hex or dec)")
+
+// -----------------------------------------------------------------------------------------------------
 
 X(STR_LONG_TEST, 				"this is a test and its a long test\n"
 								"something more to come, c'mon!!\n"

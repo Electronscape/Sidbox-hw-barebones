@@ -29,6 +29,8 @@ The goals of this rewrite are:
 Things **will** break during development — that’s expected.
 The focus is correctness, clarity, and long-term maintainability.
 
+Put the xmasg1.bbp in the root directory of the sdcard
+
 ---
 
 ## Hardware Overview
